@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
@@ -23,22 +25,24 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks , GoogleApiClient.OnConnectionFailedListener {
 
-    // Activity request codes
+    /*-------- Activity request codes---------*/
     private static final int CAMERA_CAPTURE_IMAGE_REQUEST_CODE = 100;
     public static final int MEDIA_TYPE_IMAGE = 1;
-    private Uri fileUri; //to store image ,, uri
+    private Uri fileUri; //to store image  uri
 
-    /*Directory Name where Image will be saved*/
+    /*--------Directory Name where Image will be saved------------*/
     private static String IMAGE_DIRECTORY_NAME = "myDirectory";
-
+    /*-------MainActivity Objects --------------*/
     ImageView imageView;
-    Button takeImageButton;
+    Button takeImageButton ,identifyObjects,getLocation,changeLocation;
 
     /*---------Google Api Client --------------*/
     GoogleApiClient mGoogleApiClient;
@@ -55,8 +59,12 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .build();
+        /*----------Giving objects to their Id-------*/
         imageView = (ImageView)findViewById(R.id.imageView);
         takeImageButton = (Button)findViewById(R.id.buttonClick);
+        identifyObjects = (Button)findViewById(R.id.buttonGetObjects);
+        getLocation = (Button)findViewById(R.id.getLocation);
+        changeLocation = (Button)findViewById(R.id.changeLocation);
         takeImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -68,11 +76,22 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 }
             }
         });
+        getLocation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mLatitude != null && mLongitude!=null){
+                    getAddress();
+                }else {
+                    Toast.makeText(MainActivity.this,"First Check Your Internet Connection and GPS Settings"
+                    ,Toast.LENGTH_LONG).show();
+                }
+            }
+        });
 
 
 
     }
-    /*To check if this Device has Camera or Not*/
+    /*------------To check if this Device has Camera or Not------------*/
     private boolean checkCameraHardware(Context context){
         if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
            //this device has camera
@@ -84,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             }
 
     }
-    /*Capturing image will launch camera app request capture*/
+    /*-------------Capturing image will launch camera app request capture-----------*/
     private void captureImage(){
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         fileUri = getOutputMediaFileUri(MEDIA_TYPE_IMAGE);
@@ -95,7 +114,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     * Helper methods ------------------------------------------------------------
     * */
     /*
-    * Creating file uri to store image
+    * ------------Creating file uri to store image
     * */
     public Uri getOutputMediaFileUri(int type){
      return Uri.fromFile(getOutputMediaFile(type));
@@ -111,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 return null;
             }
         }
-        // Create a media file name
+        /*------ Create a media file name i.e Image Name------*/
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss",
                 Locale.getDefault()).format(new Date());
         File mediaFile;
@@ -147,7 +166,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
-    /*methods to display Image Which Has been Clicked By User*/
+    /*----------methods to display Image Which Has been Clicked By User--------*/
     private void preViewCaptureImage(){
        try {
         /*Bitmap using for Image*/
@@ -179,7 +198,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
 
-    /*---used for getting location only ----*/
+    /*------used for getting location only ---------*/
     public void onStart(){
         mGoogleApiClient.connect();
         super.onStart();
@@ -212,6 +231,24 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
         Log.i("LOG_TAG","Google Api Connection Has been Failed");
+    }
+
+    public void getAddress(){
+        String city =null;
+        String state = null;
+        String country = null;
+        Geocoder geocoder = new Geocoder(MainActivity.this,Locale.getDefault());
+        try {
+            List<Address> addresses = geocoder.getFromLocation(Double.parseDouble(mLatitude),Double.parseDouble(mLongitude),1);
+            city = addresses.get(0).getLocality();
+            state = addresses.get(0).getAdminArea();
+            country = addresses.get(0).getCountryName();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        /*-----Toast is applied for only testing Purpose------*/
+        Toast.makeText(MainActivity.this,"City :: "+city + " State ::"+state+
+                " Country ::" +country,Toast.LENGTH_LONG ).show();
     }
 
 }
