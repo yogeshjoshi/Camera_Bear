@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -16,12 +17,17 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks , GoogleApiClient.OnConnectionFailedListener {
 
     // Activity request codes
     private static final int CAMERA_CAPTURE_IMAGE_REQUEST_CODE = 100;
@@ -33,10 +39,22 @@ public class MainActivity extends AppCompatActivity {
 
     ImageView imageView;
     Button takeImageButton;
+
+    /*---------Google Api Client --------------*/
+    GoogleApiClient mGoogleApiClient;
+    LocationRequest mLocationRequest;
+    String mLongitude,mLatitude;
+    Location mLastLocation;
+    /*---------And Location request -----------*/
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(LocationServices.API)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .build();
         imageView = (ImageView)findViewById(R.id.imageView);
         takeImageButton = (Button)findViewById(R.id.buttonClick);
         takeImageButton.setOnClickListener(new View.OnClickListener() {
@@ -50,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
 
 
     }
@@ -157,6 +176,42 @@ public class MainActivity extends AppCompatActivity {
     protected void onRestoreInstanceState(Bundle savedInstanceState){
         super.onRestoreInstanceState(savedInstanceState);
         fileUri = savedInstanceState.getParcelable("file_uri");
+    }
+
+
+    /*---used for getting location only ----*/
+    public void onStart(){
+        mGoogleApiClient.connect();
+        super.onStart();
+    }
+
+    public void onStop(){
+        mGoogleApiClient.disconnect();
+        super.onStop();
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        mLocationRequest = LocationRequest.create();
+        mLocationRequest.setInterval(1000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        mLastLocation=LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        /*Fetched Longitude and Latitude*/
+        mLongitude = String.valueOf(mLastLocation.getLongitude());
+        mLatitude = String.valueOf(mLastLocation.getLatitude());
+        /*--------Testing -----*/
+        Toast.makeText(MainActivity.this,mLongitude  + mLatitude ,Toast.LENGTH_LONG).show();
+    }
+
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.i("LOG_TAG","Google Api connection Has been Suspended");
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        Log.i("LOG_TAG","Google Api Connection Has been Failed");
     }
 
 }
